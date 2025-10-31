@@ -1,0 +1,13 @@
+<RCC>
+  <qresource prefix="menu">
+    <file>assets/add.svg</file>
+    <file>assets/remove.svg</file>
+    <file>assets/close.svg</file>
+    <file>assets/folder-open.svg</file>
+    <file>assets/save-file.svg</file>
+    <file>assets/new-file.svg</file>
+  </qresource>
+  <qresource prefix="app">
+    <file>assets/srt-file.svg</file>
+  </qresource>
+</RCC>

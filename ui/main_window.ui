@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1280</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>SRT Editor</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="app_qrc.qrc">
+    <normaloff>:/app/assets/srt-file.svg</normaloff>:/app/assets/srt-file.svg</iconset>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QTableWidget" name="subtitleTable">
+      <column>
+       <property name="text">
+        <string>Start</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>End</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Duration</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Text</string>
+       </property>
+      </column>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1280</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionNew"/>
+    <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionSave_as"/>
+    <addaction name="separator"/>
+    <addaction name="actionClose"/>
+   </widget>
+   <widget class="QMenu" name="menuAbout">
+    <property name="title">
+     <string>About</string>
+    </property>
+    <addaction name="actionSoftware"/>
+    <addaction name="actionAuthor"/>
+   </widget>
+   <widget class="QMenu" name="menuLanguages">
+    <property name="title">
+     <string>Languages</string>
+    </property>
+    <addaction name="actionAuto_translate"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="actionAdd_subtitle"/>
+    <addaction name="actionRemove_subtitle"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuLanguages"/>
+   <addaction name="menuAbout"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionNew"/>
+   <addaction name="actionOpen"/>
+   <addaction name="actionSave"/>
+   <addaction name="separator"/>
+   <addaction name="actionAdd_subtitle"/>
+   <addaction name="actionRemove_subtitle"/>
+  </widget>
+  <action name="actionNew">
+   <property name="icon">
+    <iconset resource="app_qrc.qrc">
+     <normaloff>:/menu/assets/new-file.svg</normaloff>:/menu/assets/new-file.svg</iconset>
+   </property>
+   <property name="text">
+    <string>New</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="icon">
+    <iconset resource="app_qrc.qrc">
+     <normaloff>:/menu/assets/folder-open.svg</normaloff>:/menu/assets/folder-open.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Open...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="icon">
+    <iconset resource="app_qrc.qrc">
+     <normaloff>:/menu/assets/save-file.svg</normaloff>:/menu/assets/save-file.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Save</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionSave_as">
+   <property name="icon">
+    <iconset resource="app_qrc.qrc">
+     <normaloff>:/menu/assets/save-file.svg</normaloff>:/menu/assets/save-file.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Save as...</string>
+   </property>
+  </action>
+  <action name="actionClose">
+   <property name="icon">
+    <iconset resource="app_qrc.qrc">
+     <normaloff>:/menu/assets/close.svg</normaloff>:/menu/assets/close.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </action>
+  <action name="actionSoftware">
+   <property name="text">
+    <string>Software</string>
+   </property>
+  </action>
+  <action name="actionAuthor">
+   <property name="text">
+    <string>Author</string>
+   </property>
+  </action>
+  <action name="actionAuto_translate">
+   <property name="text">
+    <string>Auto translate</string>
+   </property>
+  </action>
+  <action name="actionAdd_subtitle">
+   <property name="icon">
+    <iconset resource="app_qrc.qrc">
+     <normaloff>:/menu/assets/add.svg</normaloff>:/menu/assets/add.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Add subtitle</string>
+   </property>
+  </action>
+  <action name="actionRemove_subtitle">
+   <property name="icon">
+    <iconset resource="app_qrc.qrc">
+     <normaloff>:/menu/assets/remove.svg</normaloff>:/menu/assets/remove.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Remove subtitle</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="app_qrc.qrc"/>
+ </resources>
+ <connections/>
+</ui>
