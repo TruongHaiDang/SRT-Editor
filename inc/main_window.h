@@ -33,6 +33,8 @@ private:
     void save_project();
     void save_as_project();
 
+    void open_settings_window();
+
     bool load_project_from_file(const QString &file_path);
     bool save_project_to_file(const QString &file_path);
 

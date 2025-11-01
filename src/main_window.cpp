@@ -1,4 +1,5 @@
 #include "main_window.h"
+#include "settings_window.h"
 
 #include <QDir>
 #include <QFile>
@@ -65,6 +66,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::open_project);
     connect(ui->actionSave, &QAction::triggered, this, &MainWindow::save_project);
     connect(ui->actionSave_as, &QAction::triggered, this, &MainWindow::save_as_project);
+    connect(ui->actionSettings, &QAction::triggered, this, &MainWindow::open_settings_window);
     connect(ui->actionClose, &QAction::triggered, this, &MainWindow::close);
     connect(ui->actionAdd_subtitle, &QAction::triggered, this, &MainWindow::add_subtitle);
     connect(ui->actionRemove_subtitle, &QAction::triggered, this, &MainWindow::remove_subtitle);
@@ -177,6 +179,12 @@ void MainWindow::save_as_project()
     currentProjectPath_ = fileInfo.absoluteFilePath();
     setWindowTitle(QStringLiteral("%1 - %2").arg(baseWindowTitle_, fileInfo.fileName()));
     ui->statusbar->showMessage(tr("Saved %1").arg(fileInfo.fileName()));
+}
+
+void MainWindow::open_settings_window()
+{
+    SettingsWindow settingsDialog(this);
+    settingsDialog.exec();
 }
 
 bool MainWindow::load_project_from_file(const QString &file_path)

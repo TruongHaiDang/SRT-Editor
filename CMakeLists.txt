@@ -18,7 +18,14 @@ add_executable(SRT-Editor
     inc/main.h
     src/main_window.cpp
     inc/main_window.h
+    src/settings.cpp
+    inc/settings.h
+    src/settings_window.cpp
+    inc/settings_window.h
+    src/translator.cpp
+    inc/translator.h
     ui/main_window.ui
+    ui/settings_window.ui
     ui/app_qrc.qrc
 )
 
