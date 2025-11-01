@@ -63,7 +63,7 @@ void SettingsWindow::draw_ai_provider_language()
 
     auto *providerCombo = new QComboBox(container);
     providerCombo->setObjectName(QStringLiteral("providerCombo"));
-    providerCombo->addItems({tr("OpenAI"), tr("Gemini"), tr("Github Model")});
+    providerCombo->addItems({tr("OpenAI"), tr("Gemini"), tr("Github Model"), tr("Google Translate")});
 
     const QString providerKey = QStringLiteral("ai/provider");
     const QString storedProvider = settings_.value(providerKey, providerCombo->itemText(0)).toString();
