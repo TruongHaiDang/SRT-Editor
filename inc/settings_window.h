@@ -1,9 +1,10 @@
 #pragma once
 
 #include <QDialog>
-#include <memory>
 #include <QTreeWidgetItem>
 #include <QString>
+#include <memory>
+
 #include "settings.h"
 
 namespace Ui
@@ -21,6 +22,8 @@ public:
 
 private:
     std::unique_ptr<Ui::SettingsWindow> ui;
+    Settings settings_;
 
     void on_item_change(QTreeWidgetItem *current, QTreeWidgetItem *previous);
+    void draw_ai_provider_language();
 };
