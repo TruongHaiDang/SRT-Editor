@@ -5,6 +5,7 @@
 #include <QScreen>
 #include <memory>
 #include <QString>
+#include <QDesktopServices>
 
 #include "ui_main_window.h"
 
@@ -32,12 +33,11 @@ private:
     void open_project();
     void save_project();
     void save_as_project();
-
     void open_settings_window();
-
     bool load_project_from_file(const QString &file_path);
     bool save_project_to_file(const QString &file_path);
-
     void add_subtitle();
     void remove_subtitle();
+    void open_translator_window();
+    void open_portfolio_website();
 };

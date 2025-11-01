@@ -111,6 +111,8 @@
    <addaction name="separator"/>
    <addaction name="actionAdd_subtitle"/>
    <addaction name="actionRemove_subtitle"/>
+   <addaction name="separator"/>
+   <addaction name="actionAuto_translate"/>
   </widget>
   <action name="actionNew">
    <property name="icon">
@@ -177,6 +179,10 @@
    </property>
   </action>
   <action name="actionAuto_translate">
+   <property name="icon">
+    <iconset resource="app_qrc.qrc">
+     <normaloff>:/menu/assets/google-translate.svg</normaloff>:/menu/assets/google-translate.svg</iconset>
+   </property>
    <property name="text">
     <string>Auto translate</string>
    </property>

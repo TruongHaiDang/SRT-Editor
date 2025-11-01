@@ -1,4 +1,5 @@
 #include "main_window.h"
+#include "translator_window.h"
 #include "settings_window.h"
 
 #include <QDir>
@@ -70,6 +71,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionClose, &QAction::triggered, this, &MainWindow::close);
     connect(ui->actionAdd_subtitle, &QAction::triggered, this, &MainWindow::add_subtitle);
     connect(ui->actionRemove_subtitle, &QAction::triggered, this, &MainWindow::remove_subtitle);
+    connect(ui->actionAuto_translate, &QAction::triggered, this, &MainWindow::open_translator_window);
+    connect(ui->actionAuthor, &QAction::triggered, this, &MainWindow::open_portfolio_website);
 
     ui->statusbar->showMessage("Ready!");
 }
@@ -347,4 +350,15 @@ void MainWindow::remove_subtitle()
         ui->statusbar->showMessage(QString("Remove subtitle %1").arg(index.row() + 1));
         ui->subtitleTable->removeRow(index.row());
     }
+}
+
+void MainWindow::open_translator_window()
+{
+    TranslatorWindow dialog(this);
+    dialog.exec();
+}
+
+void MainWindow::open_portfolio_website()
+{
+    QDesktopServices::openUrl(QUrl(QStringLiteral("https://truonghaidang.com")));
 }
