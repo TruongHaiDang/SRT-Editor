@@ -34,6 +34,8 @@ public:
     explicit TranslatorWindow(QWidget *parent = nullptr);
     ~TranslatorWindow() override;
 
+    void setSourceTexts(const QStringList &sourceTexts);
+
 private slots:
     void refreshModelList(const QString &service);
 

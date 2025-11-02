@@ -370,6 +370,16 @@ void MainWindow::remove_subtitle()
 void MainWindow::open_translator_window()
 {
     TranslatorWindow dialog(this);
+    QStringList sourceTexts;
+    const int rowCount = ui->subtitleTable->rowCount();
+    sourceTexts.reserve(rowCount);
+    for (int row = 0; row < rowCount; ++row)
+    {
+        const QTableWidgetItem *textItem = ui->subtitleTable->item(row, 3);
+        sourceTexts.append(textItem ? textItem->text() : QString());
+    }
+
+    dialog.setSourceTexts(sourceTexts);
     dialog.exec();
 }
 
