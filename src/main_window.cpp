@@ -83,7 +83,11 @@ MainWindow::~MainWindow() = default;
 void MainWindow::init_settings()
 {
     const QString provider = settings.value("ai/lang/provider").toString().trimmed();
-    qDebug() << "Provider" << provider;
+    if (provider.isEmpty())
+    {
+        settings.setValue("ai/lang/provider", "OpenAI");
+        settings.sync();
+    }
 }
 
 void MainWindow::centerOnPrimaryScreen() noexcept

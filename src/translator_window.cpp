@@ -3,6 +3,7 @@
 #include "ui_translator_window.h"
 
 #include <QComboBox>
+#include <QDebug>
 #include <QHeaderView>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -135,38 +136,6 @@ bool containsTextModality(const QJsonObject &obj)
     return false;
 }
 
-bool looksLikeTextModel(const QString &identifier, const QJsonObject &source)
-{
-    const QString idLower = identifier.toLower();
-    static const QStringList forbiddenKeywords = {
-        QStringLiteral("audio"),
-        QStringLiteral("speech"),
-        QStringLiteral("voice"),
-        QStringLiteral("whisper"),
-        QStringLiteral("image"),
-        QStringLiteral("vision"),
-        QStringLiteral("video"),
-        QStringLiteral("diffusion"),
-        QStringLiteral("render"),
-        QStringLiteral("music")
-    };
-
-    for (const QString &keyword : forbiddenKeywords)
-    {
-        if (idLower.contains(keyword))
-        {
-            return false;
-        }
-    }
-
-    if (!source.isEmpty() && containsTextModality(source))
-    {
-        return true;
-    }
-
-    return source.isEmpty();
-}
-
 QStringList parseModelNames(const QByteArray &payload)
 {
     QStringList models;
@@ -175,77 +144,49 @@ QStringList parseModelNames(const QByteArray &payload)
         return models;
     }
 
-    QJsonParseError parseError;
-    const QJsonDocument doc = QJsonDocument::fromJson(payload, &parseError);
-    if (parseError.error != QJsonParseError::NoError)
+    QJsonParseError error;
+    const QJsonDocument doc = QJsonDocument::fromJson(payload, &error);
+    if (error.error != QJsonParseError::NoError)
+    {
+        qDebug() << "JSON parse error:" << error.errorString();
+        return models;
+    }
+
+    const QJsonObject root = doc.object();
+    qDebug() << "Root object keys:" << root.keys();
+    
+    const QJsonValue dataValue = root.value(QStringLiteral("data"));
+    qDebug() << "dataValue type:" << static_cast<int>(dataValue.type());
+    qDebug() << "dataValue isArray:" << dataValue.isArray();
+    
+    if (!dataValue.isArray())
     {
         return models;
     }
 
-    auto appendFromArray = [&models](const QJsonArray &array) {
-        for (const QJsonValue &value : array)
-        {
-            QString candidate;
-            QJsonObject sourceObject;
-            if (value.isObject())
-            {
-                const QJsonObject obj = value.toObject();
-                sourceObject = obj;
-                candidate = obj.value(QStringLiteral("id")).toString();
-                if (candidate.isEmpty())
-                {
-                    candidate = obj.value(QStringLiteral("name")).toString();
-                }
-                if (candidate.isEmpty())
-                {
-                    candidate = obj.value(QStringLiteral("model")).toString();
-                }
-            }
-            else if (value.isString())
-            {
-                candidate = value.toString();
-            }
-
-            if (!candidate.isEmpty() && looksLikeTextModel(candidate, sourceObject))
-            {
-                if (!models.contains(candidate))
-                {
-                    models.append(candidate);
-                }
-            }
-        }
-    };
-
-    if (doc.isArray())
+    const QJsonArray dataArray = dataValue.toArray();
+    qDebug() << "Data array size:" << dataArray.size();
+    
+    for (const QJsonValue &item : dataArray)
     {
-        appendFromArray(doc.array());
-    }
-    else if (doc.isObject())
-    {
-        const QJsonObject obj = doc.object();
-        static const char *keys[] = {"models", "data", "items", "summaries"};
-        for (const char *key : keys)
+        if (!item.isObject())
         {
-            const QJsonValue value = obj.value(QString::fromUtf8(key));
-            if (value.isArray())
-            {
-                appendFromArray(value.toArray());
-            }
+            continue;
         }
 
-        const QString singleId = obj.value(QStringLiteral("id")).toString();
-        if (!singleId.isEmpty() && looksLikeTextModel(singleId, obj) && !models.contains(singleId))
+        const QJsonObject modelObj = item.toObject();
+        const QString id = modelObj.value(QStringLiteral("id")).toString();
+        if (id.isEmpty())
         {
-            models.append(singleId);
+            continue;
         }
 
-        const QString singleName = obj.value(QStringLiteral("name")).toString();
-        if (!singleName.isEmpty() && looksLikeTextModel(singleName, obj) && !models.contains(singleName))
+        if (id.contains("gpt-"))
         {
-            models.append(singleName);
+            models.append(id);
         }
     }
-
+    
     return models;
 }
 
@@ -304,7 +245,10 @@ TranslatorWindow::TranslatorWindow(QWidget *parent)
     ui->subtitleTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     const QString provider = settings.value("ai/lang/provider").toString().trimmed();
-    qDebug() << "Provider" << provider;
+    if (!provider.isEmpty())
+    {
+        refreshModelList(provider);
+    }
 }
 
 TranslatorWindow::~TranslatorWindow() = default;
@@ -321,7 +265,7 @@ void TranslatorWindow::refreshModelList(const QString &service)
         return;
     }
 
-    const QString token = apiKeyForService(service);
+    const QString token = settings.value("ai/lang/apiKey").toString().trimmed();
     if (token.isEmpty())
     {
         return;
@@ -345,52 +289,4 @@ void TranslatorWindow::refreshModelList(const QString &service)
     {
         ui->modelList->addItems(models);
     }
-}
-
-QString TranslatorWindow::apiKeyForService(const QString &service) const
-{
-    const auto tryKeys = [this](const QStringList &keys) -> QString {
-        for (const QString &key : keys)
-        {
-            const QString value = settings.value(key).toString().trimmed();
-            if (!value.isEmpty())
-            {
-                return value;
-            }
-        }
-        return {};
-    };
-
-    const QString lower = service.toLower();
-    QStringList candidates;
-
-    if (lower.contains(QStringLiteral("github")))
-    {
-        candidates << QStringLiteral("ai/github/apiKey")
-                   << QStringLiteral("github/apiKey")
-                   << QStringLiteral("translator/github/apiKey");
-    }
-    else if (lower.contains(QStringLiteral("openai")))
-    {
-        candidates << QStringLiteral("ai/openai/apiKey")
-                   << QStringLiteral("openai/apiKey")
-                   << QStringLiteral("translator/openai/apiKey");
-    }
-    else if (lower.contains(QStringLiteral("gemini")))
-    {
-        candidates << QStringLiteral("ai/gemini/apiKey")
-                   << QStringLiteral("gemini/apiKey")
-                   << QStringLiteral("translator/gemini/apiKey");
-    }
-    else if (lower.contains(QStringLiteral("google")))
-    {
-        candidates << QStringLiteral("ai/google/apiKey")
-                   << QStringLiteral("google/apiKey")
-                   << QStringLiteral("translator/google/apiKey");
-    }
-
-    candidates << QStringLiteral("ai/apiKey")
-               << QStringLiteral("translator/apiKey");
-
-    return tryKeys(candidates);
 }
