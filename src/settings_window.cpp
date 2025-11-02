@@ -65,8 +65,8 @@ void SettingsWindow::draw_ai_provider_language()
     providerCombo->setObjectName(QStringLiteral("providerCombo"));
     providerCombo->addItems({tr("OpenAI"), tr("Gemini"), tr("Github Model"), tr("Google Translate")});
 
-    const QString providerKey = QStringLiteral("ai/provider");
-    const QString storedProvider = settings_.value(providerKey, providerCombo->itemText(0)).toString();
+    const QString providerKey = QStringLiteral("ai/lang/provider");
+    const QString storedProvider = settings.value(providerKey, providerCombo->itemText(0)).toString();
     const int providerIndex = providerCombo->findText(storedProvider, Qt::MatchFixedString);
     providerCombo->setCurrentIndex(providerIndex == -1 ? 0 : providerIndex);
 
@@ -76,8 +76,8 @@ void SettingsWindow::draw_ai_provider_language()
     auto *apiKeyEdit = new QLineEdit(container);
     apiKeyEdit->setObjectName(QStringLiteral("apiKeyEdit"));
     apiKeyEdit->setEchoMode(QLineEdit::Password);
-    const QString apiKeyKey = QStringLiteral("ai/apiKey");
-    apiKeyEdit->setText(settings_.value(apiKeyKey).toString());
+    const QString apiKeyKey = QStringLiteral("ai/lang/apiKey");
+    apiKeyEdit->setText(settings.value(apiKeyKey).toString());
 
     layout->addWidget(providerLabel);
     layout->addWidget(providerCombo);
@@ -89,12 +89,12 @@ void SettingsWindow::draw_ai_provider_language()
     ui->settingContent->setWidget(container);
 
     connect(providerCombo, &QComboBox::currentTextChanged, this, [this, providerKey](const QString &value) {
-        settings_.setValue(providerKey, value);
-        settings_.sync();
+        settings.setValue(providerKey, value);
+        settings.sync();
     });
 
     connect(apiKeyEdit, &QLineEdit::textChanged, this, [this, apiKeyKey](const QString &value) {
-        settings_.setValue(apiKeyKey, value);
-        settings_.sync();
+        settings.setValue(apiKeyKey, value);
+        settings.sync();
     });
 }

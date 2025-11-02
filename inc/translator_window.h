@@ -38,9 +38,8 @@ private slots:
     void refreshModelList(const QString &service);
 
 private:
-    void setupServiceList();
     QString apiKeyForService(const QString &service) const;
 
     std::unique_ptr<Ui::TranslatorWindow> ui;
-    Settings settings_;
+    Settings settings;
 };

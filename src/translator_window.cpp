@@ -303,7 +303,8 @@ TranslatorWindow::TranslatorWindow(QWidget *parent)
     ui->setupUi(this);
     ui->subtitleTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
-    setupServiceList();
+    const QString provider = settings.value("ai/lang/provider").toString().trimmed();
+    qDebug() << "Provider" << provider;
 }
 
 TranslatorWindow::~TranslatorWindow() = default;
@@ -346,33 +347,12 @@ void TranslatorWindow::refreshModelList(const QString &service)
     }
 }
 
-void TranslatorWindow::setupServiceList()
-{
-    const QStringList services = {
-        QStringLiteral("OpenAI"),
-        QStringLiteral("Gemini"),
-        QStringLiteral("Github Model"),
-        QStringLiteral("Google Translate")
-    };
-
-    ui->serviceList->clear();
-    ui->serviceList->addItems(services);
-
-    connect(ui->serviceList, &QComboBox::currentTextChanged, this, &TranslatorWindow::refreshModelList);
-
-    const QString initialService = ui->serviceList->currentText();
-    if (!initialService.isEmpty())
-    {
-        refreshModelList(initialService);
-    }
-}
-
 QString TranslatorWindow::apiKeyForService(const QString &service) const
 {
     const auto tryKeys = [this](const QStringList &keys) -> QString {
         for (const QString &key : keys)
         {
-            const QString value = settings_.value(key).toString().trimmed();
+            const QString value = settings.value(key).toString().trimmed();
             if (!value.isEmpty())
             {
                 return value;

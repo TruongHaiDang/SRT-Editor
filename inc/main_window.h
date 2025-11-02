@@ -7,6 +7,7 @@
 #include <QString>
 #include <QDesktopServices>
 
+#include "settings.h"
 #include "ui_main_window.h"
 
 namespace Ui
@@ -28,7 +29,9 @@ private:
 
     QString baseWindowTitle_;
     QString currentProjectPath_;
+    Settings settings;
 
+    void init_settings();
     void new_project();
     void open_project();
     void save_project();

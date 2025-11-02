@@ -19,37 +19,37 @@
 
 namespace
 {
-QString computeDurationString(const QString &start, const QString &end)
-{
-    const QTime startTime = QTime::fromString(start, QStringLiteral("hh:mm:ss,zzz"));
-    const QTime endTime = QTime::fromString(end, QStringLiteral("hh:mm:ss,zzz"));
-
-    if (!startTime.isValid() || !endTime.isValid())
+    QString computeDurationString(const QString &start, const QString &end)
     {
-        return {};
-    }
+        const QTime startTime = QTime::fromString(start, QStringLiteral("hh:mm:ss,zzz"));
+        const QTime endTime = QTime::fromString(end, QStringLiteral("hh:mm:ss,zzz"));
 
-    int msecs = startTime.msecsTo(endTime);
-    if (msecs < 0)
-    {
-        msecs += 24 * 60 * 60 * 1000;
-    }
-    if (msecs < 0)
-    {
-        return {};
-    }
+        if (!startTime.isValid() || !endTime.isValid())
+        {
+            return {};
+        }
 
-    const int hours = msecs / (60 * 60 * 1000);
-    const int minutes = (msecs / (60 * 1000)) % 60;
-    const int seconds = (msecs / 1000) % 60;
-    const int milliseconds = msecs % 1000;
+        int msecs = startTime.msecsTo(endTime);
+        if (msecs < 0)
+        {
+            msecs += 24 * 60 * 60 * 1000;
+        }
+        if (msecs < 0)
+        {
+            return {};
+        }
 
-    return QStringLiteral("%1:%2:%3,%4")
-        .arg(hours, 2, 10, QLatin1Char('0'))
-        .arg(minutes, 2, 10, QLatin1Char('0'))
-        .arg(seconds, 2, 10, QLatin1Char('0'))
-        .arg(milliseconds, 3, 10, QLatin1Char('0'));
-}
+        const int hours = msecs / (60 * 60 * 1000);
+        const int minutes = (msecs / (60 * 1000)) % 60;
+        const int seconds = (msecs / 1000) % 60;
+        const int milliseconds = msecs % 1000;
+
+        return QStringLiteral("%1:%2:%3,%4")
+            .arg(hours, 2, 10, QLatin1Char('0'))
+            .arg(minutes, 2, 10, QLatin1Char('0'))
+            .arg(seconds, 2, 10, QLatin1Char('0'))
+            .arg(milliseconds, 3, 10, QLatin1Char('0'));
+    }
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -74,10 +74,17 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionAuto_translate, &QAction::triggered, this, &MainWindow::open_translator_window);
     connect(ui->actionAuthor, &QAction::triggered, this, &MainWindow::open_portfolio_website);
 
+    init_settings();
     ui->statusbar->showMessage("Ready!");
 }
 
 MainWindow::~MainWindow() = default;
+
+void MainWindow::init_settings()
+{
+    const QString provider = settings.value("ai/lang/provider").toString().trimmed();
+    qDebug() << "Provider" << provider;
+}
 
 void MainWindow::centerOnPrimaryScreen() noexcept
 {
@@ -211,7 +218,8 @@ bool MainWindow::load_project_from_file(const QString &file_path)
     ui->subtitleTable->setRowCount(0);
 
     QStringList block;
-    auto processBlock = [this](const QStringList &lines) {
+    auto processBlock = [this](const QStringList &lines)
+    {
         if (lines.size() < 2)
         {
             return;
@@ -269,7 +277,10 @@ bool MainWindow::load_project_from_file(const QString &file_path)
         }
     }
 
-    if (!block.isEmpty()) { processBlock(block); }
+    if (!block.isEmpty())
+    {
+        processBlock(block);
+    }
 
     return true;
 }

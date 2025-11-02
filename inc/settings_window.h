@@ -22,7 +22,7 @@ public:
 
 private:
     std::unique_ptr<Ui::SettingsWindow> ui;
-    Settings settings_;
+    Settings settings;
 
     void on_item_change(QTreeWidgetItem *current, QTreeWidgetItem *previous);
     void draw_ai_provider_language();
