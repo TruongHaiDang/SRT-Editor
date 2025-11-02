@@ -92,7 +92,9 @@ bool containsTextModality(const QJsonObject &obj)
         QStringLiteral("supportedModalities"),
         QStringLiteral("capabilities"),
         QStringLiteral("input_modalities"),
-        QStringLiteral("output_modalities")
+        QStringLiteral("output_modalities"),
+        QStringLiteral("supported_input_modalities"),
+        QStringLiteral("supported_output_modalities")
     };
 
     for (const QString &key : modalityArrays)
@@ -136,8 +138,9 @@ bool containsTextModality(const QJsonObject &obj)
     return false;
 }
 
-QStringList parseModelNames(const QByteArray &payload)
+QStringList parseOpenAIModelNames(const QByteArray &payload)
 {
+    qDebug() << payload;
     QStringList models;
     if (payload.isEmpty())
     {
@@ -148,16 +151,12 @@ QStringList parseModelNames(const QByteArray &payload)
     const QJsonDocument doc = QJsonDocument::fromJson(payload, &error);
     if (error.error != QJsonParseError::NoError)
     {
-        qDebug() << "JSON parse error:" << error.errorString();
         return models;
     }
 
     const QJsonObject root = doc.object();
-    qDebug() << "Root object keys:" << root.keys();
     
     const QJsonValue dataValue = root.value(QStringLiteral("data"));
-    qDebug() << "dataValue type:" << static_cast<int>(dataValue.type());
-    qDebug() << "dataValue isArray:" << dataValue.isArray();
     
     if (!dataValue.isArray())
     {
@@ -165,7 +164,6 @@ QStringList parseModelNames(const QByteArray &payload)
     }
 
     const QJsonArray dataArray = dataValue.toArray();
-    qDebug() << "Data array size:" << dataArray.size();
     
     for (const QJsonValue &item : dataArray)
     {
@@ -190,6 +188,88 @@ QStringList parseModelNames(const QByteArray &payload)
     return models;
 }
 
+QStringList parseGithubModelNames(const QByteArray &payload)
+{
+    QStringList models;
+    if (payload.isEmpty())
+    {
+        return models;
+    }
+
+    QJsonParseError error;
+    const QJsonDocument doc = QJsonDocument::fromJson(payload, &error);
+    if (error.error != QJsonParseError::NoError)
+    {
+        return models;
+    }
+
+    QJsonArray dataArray;
+    
+    // GitHub Models API có thể trả về array trực tiếp hoặc object chứa array
+    if (doc.isArray())
+    {
+        dataArray = doc.array();
+    }
+    else if (doc.isObject())
+    {
+        const QJsonObject root = doc.object();
+        const QJsonValue dataValue = root.value(QStringLiteral("data"));
+        if (dataValue.isArray())
+        {
+            dataArray = dataValue.toArray();
+        }
+        else
+        {
+            return models;
+        }
+    }
+    else
+    {
+        return models;
+    }
+
+    for (const QJsonValue &item : dataArray)
+    {
+        if (!item.isObject())
+        {
+            continue;
+        }
+
+        const QJsonObject modelObj = item.toObject();
+        const QString id = modelObj.value(QStringLiteral("id")).toString();
+        if (id.isEmpty())
+        {
+            continue;
+        }
+
+        // Kiểm tra output modalities - chỉ lấy models có text output
+        const QJsonValue outputModalitiesValue = modelObj.value(QStringLiteral("supported_output_modalities"));
+        bool hasTextOutput = false;
+        
+        if (outputModalitiesValue.isArray())
+        {
+            const QJsonArray outputModalities = outputModalitiesValue.toArray();
+            for (const QJsonValue &modality : outputModalities)
+            {
+                const QString modStr = modality.toString().toLower();
+                if (modStr == QStringLiteral("text") || modStr.contains(QStringLiteral("text")))
+                {
+                    hasTextOutput = true;
+                    break;
+                }
+            }
+        }
+
+        // Nếu có text output modality, thêm vào danh sách
+        if (hasTextOutput)
+        {
+            models.append(id);
+        }
+    }
+
+    return models;
+}
+
 QStringList fetchGithubModels(const QString &token)
 {
     if (token.isEmpty())
@@ -199,10 +279,11 @@ QStringList fetchGithubModels(const QString &token)
 
     QList<QByteArray> headers;
     headers << QByteArray("Authorization: Bearer ") + token.toUtf8();
-    headers << QByteArray("Accept: application/json");
+    headers << QByteArray("Accept: application/vnd.github+json");
+    headers << QByteArray("X-GitHub-Api-Version: 2022-11-28");
 
-    const QByteArray response = performGetRequest(QByteArrayLiteral("https://api.github.com/models/catalog"), headers);
-    return parseModelNames(response);
+    const QByteArray response = performGetRequest(QByteArrayLiteral("https://models.github.ai/catalog/models"), headers);
+    return parseGithubModelNames(response);
 }
 
 QStringList fetchOpenAIModels(const QString &token)
@@ -217,7 +298,7 @@ QStringList fetchOpenAIModels(const QString &token)
     headers << QByteArray("Accept: application/json");
 
     const QByteArray response = performGetRequest(QByteArrayLiteral("https://api.openai.com/v1/models"), headers);
-    return parseModelNames(response);
+    return parseOpenAIModelNames(response);
 }
 
 QStringList fetchGeminiModels(const QString &apiKey)
@@ -234,7 +315,7 @@ QStringList fetchGeminiModels(const QString &apiKey)
     headers << QByteArray("Accept: application/json");
 
     const QByteArray response = performGetRequest(url, headers);
-    return parseModelNames(response);
+    return parseOpenAIModelNames(response);
 }
 } // namespace
 
