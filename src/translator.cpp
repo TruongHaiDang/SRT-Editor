@@ -6,7 +6,6 @@
 #include <QJsonValue>
 #include <QByteArray>
 #include <QTextStream>
-#include <QProcessEnvironment>
 #include <QStringList>
 
 #include <curl/curl.h>
@@ -74,15 +73,15 @@ Translator::~Translator()
 {
 }
 
-QString Translator::translate_by_github_model(QString input, std::string src_lang, std::string target_lang)
+QString Translator::translate_by_github_model(QString input, std::string src_lang, std::string target_lang, const QString &token)
 {
     if (input.isEmpty())
     {
         return input;
     }
 
-    const QByteArray token = qgetenv("GITHUB_TOKEN");
-    if (token.isEmpty())
+    const QString trimmedToken = token.trimmed();
+    if (trimmedToken.isEmpty())
     {
         return input;
     }
@@ -100,13 +99,14 @@ QString Translator::translate_by_github_model(QString input, std::string src_lan
     struct curl_slist *headers = nullptr;
 
     headers = curl_slist_append(headers, "Content-Type: application/json");
-    const std::string authHeader = "Authorization: Bearer " + token.toStdString();
+    const QByteArray tokenBytes = trimmedToken.toUtf8();
+    const std::string authHeader = "Authorization: Bearer " + tokenBytes.toStdString();
     headers = curl_slist_append(headers, authHeader.c_str());
 
     QJsonArray messages;
     QJsonObject systemMessage{
         {"role", "system"},
-        {"content", QStringLiteral("You are a translation assistant. Translate text as faithfully as possible.")}};
+        {"content", QStringLiteral("You are a translation assistant. Translate text as faithfully as possible. Output only the final translated text. No explanations or extra content.")}};
 
     const QString prompt = QStringLiteral("Translate the following text from %1 to %2:\n%3")
                                .arg(QString::fromStdString(src_lang),
@@ -171,15 +171,15 @@ QString Translator::translate_by_github_model(QString input, std::string src_lan
     return content.trimmed();
 }
 
-QString Translator::translate_by_openai(QString input, std::string src_lang, std::string target_lang)
+QString Translator::translate_by_openai(QString input, std::string src_lang, std::string target_lang, const QString &token)
 {
     if (input.isEmpty())
     {
         return input;
     }
 
-    const QByteArray token = qgetenv("OPENAI_API_KEY");
-    if (token.isEmpty())
+    const QString trimmedToken = token.trimmed();
+    if (trimmedToken.isEmpty())
     {
         return input;
     }
@@ -196,13 +196,14 @@ QString Translator::translate_by_openai(QString input, std::string src_lang, std
     struct curl_slist *headers = nullptr;
 
     headers = curl_slist_append(headers, "Content-Type: application/json");
-    const std::string authHeader = "Authorization: Bearer " + token.toStdString();
+    const QByteArray tokenBytes = trimmedToken.toUtf8();
+    const std::string authHeader = "Authorization: Bearer " + tokenBytes.toStdString();
     headers = curl_slist_append(headers, authHeader.c_str());
 
     QJsonArray messages;
     QJsonObject developerMessage{
-        {"role", "developer"},
-        {"content", QStringLiteral("You are a translation assistant. Translate text as faithfully as possible.")}};
+        {"role", "assistant"},
+        {"content", QStringLiteral("You are a translation assistant. Translate text as faithfully as possible. Output only the final translated text. No explanations or extra content.")}};
 
     const QString prompt = QStringLiteral("Translate the following text from %1 to %2:\n%3")
                                .arg(QString::fromStdString(src_lang),
@@ -265,12 +266,14 @@ QString Translator::translate_by_openai(QString input, std::string src_lang, std
     return content.trimmed();
 }
 
-QString Translator::translate_by_gemini(QString input, std::string src_lang, std::string target_lang)
+QString Translator::translate_by_gemini(QString input, std::string src_lang, std::string target_lang, const QString &token)
 {
+    Q_UNUSED(token);
     return input;
 }
 
-QString Translator::translate_by_google_translate(QString input, std::string src_lang, std::string target_lang)
+QString Translator::translate_by_google_translate(QString input, std::string src_lang, std::string target_lang, const QString &token)
 {
+    Q_UNUSED(token);
     return input;
 }

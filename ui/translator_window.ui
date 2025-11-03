@@ -92,6 +92,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="btnTranslateAll">
+       <property name="text">
+        <string>Translate All</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="btnOk">
        <property name="text">
         <string>Ok</string>

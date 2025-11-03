@@ -3,6 +3,7 @@
 #include "settings_window.h"
 
 #include <QDir>
+#include <algorithm>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -380,7 +381,30 @@ void MainWindow::open_translator_window()
     }
 
     dialog.setSourceTexts(sourceTexts);
-    dialog.exec();
+
+    if (dialog.exec() == QDialog::Accepted)
+    {
+        const QStringList translatedTexts = dialog.targetTexts();
+        const int currentRowCount = ui->subtitleTable->rowCount();
+        const int maxRows = std::min(currentRowCount, static_cast<int>(translatedTexts.size()));
+
+        for (int row = 0; row < maxRows; ++row)
+        {
+            const QString translated = translatedTexts.at(row).trimmed();
+            if (translated.isEmpty())
+            {
+                continue;
+            }
+
+            QTableWidgetItem *textItem = ui->subtitleTable->item(row, 3);
+            if (!textItem)
+            {
+                textItem = new QTableWidgetItem();
+                ui->subtitleTable->setItem(row, 3, textItem);
+            }
+            textItem->setText(translated);
+        }
+    }
 }
 
 void MainWindow::open_portfolio_website()

@@ -5,6 +5,7 @@
 
 #include "settings.h"
 #include "ui_translator_window.h"
+#include "translator.h"
 
 #include <QComboBox>
 #include <QHeaderView>
@@ -12,7 +13,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
-#include <QProcessEnvironment>
 #include <QStringList>
 #include <QUrl>
 
@@ -35,12 +35,16 @@ public:
     ~TranslatorWindow() override;
 
     void setSourceTexts(const QStringList &sourceTexts);
+    QStringList targetTexts() const;
 
 private slots:
     void refreshModelList(const QString &service);
     void handleTranslateButton();
+    void translateAll();
 
 private:
+    bool validateLanguageInputs();
     std::unique_ptr<Ui::TranslatorWindow> ui;
     Settings settings;
+    Translator translator;
 };

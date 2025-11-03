@@ -5,6 +5,8 @@
 #include <QComboBox>
 #include <QDebug>
 #include <QHeaderView>
+#include <QMessageBox>
+#include <QPoint>
 #include <QPushButton>
 #include <QTableWidgetItem>
 #include <QJsonArray>
@@ -142,7 +144,6 @@ namespace
 
     QStringList parseOpenAIModelNames(const QByteArray &payload)
     {
-        qDebug() << payload;
         QStringList models;
         if (payload.isEmpty())
         {
@@ -332,6 +333,8 @@ TranslatorWindow::TranslatorWindow(QWidget *parent)
     ui->subtitleTable->setColumnWidth(2, 110);
 
     connect(ui->btnCancle, &QPushButton::clicked, this, &TranslatorWindow::close);
+    connect(ui->btnTranslateAll, &QPushButton::clicked, this, &TranslatorWindow::translateAll);
+    connect(ui->btnOk, &QPushButton::clicked, this, &TranslatorWindow::accept);
 
     const QString provider = settings.value("ai/lang/provider").toString().trimmed();
     if (!provider.isEmpty())
@@ -375,7 +378,7 @@ void TranslatorWindow::setSourceTexts(const QStringList &sourceTexts)
 
 void TranslatorWindow::handleTranslateButton()
 {
-    const auto *button = qobject_cast<QPushButton *>(sender());
+    auto *button = qobject_cast<QPushButton *>(sender());
     if (!button)
     {
         return;
@@ -385,7 +388,8 @@ void TranslatorWindow::handleTranslateButton()
     int row = button->property("row").toInt(&ok);
     if (!ok)
     {
-        row = ui->subtitleTable->indexAt(button->pos()).row();
+        const QPoint viewportPos = ui->subtitleTable->viewport()->mapFromGlobal(button->mapToGlobal(QPoint(0, 0)));
+        row = ui->subtitleTable->indexAt(viewportPos).row();
     }
 
     if (row < 0 || row >= ui->subtitleTable->rowCount())
@@ -393,11 +397,79 @@ void TranslatorWindow::handleTranslateButton()
         return;
     }
 
-    const QTableWidgetItem *sourceItem = ui->subtitleTable->item(row, 0);
+    QTableWidgetItem *sourceItem = ui->subtitleTable->item(row, 0);
     const QString sourceText = sourceItem ? sourceItem->text() : QString();
     const int displayRow = row + 1;
-
     qDebug().noquote() << QStringLiteral("Translate row %1: %2").arg(displayRow).arg(sourceText);
+
+    if (!validateLanguageInputs())
+    {
+        return;
+    }
+
+    const QString provider = settings.value("ai/lang/provider").toString().trimmed();
+    if (provider.isEmpty())
+    {
+        QMessageBox::warning(this, tr("Missing provider"), tr("Please select an AI provider before translating."));
+        return;
+    }
+
+    const QString apiToken = settings.value("ai/lang/apiKey").toString().trimmed();
+    if (apiToken.isEmpty())
+    {
+        QMessageBox::warning(this, tr("Missing API key"), tr("Please configure an API key before translating."));
+        return;
+    }
+
+    const bool isOpenAI = provider.compare(QStringLiteral("OpenAI"), Qt::CaseInsensitive) == 0;
+    const bool isGithub = provider.compare(QStringLiteral("Github Model"), Qt::CaseInsensitive) == 0;
+    const bool isGemini = provider.compare(QStringLiteral("Gemini"), Qt::CaseInsensitive) == 0;
+    const bool isGoogle = provider.compare(QStringLiteral("Google Translate"), Qt::CaseInsensitive) == 0;
+
+    if (!isOpenAI && !isGithub && !isGemini && !isGoogle)
+    {
+        QMessageBox::warning(this, tr("Unsupported provider"), tr("The selected provider is not supported for translation."));
+        return;
+    }
+
+    const std::string sourceLanguage = ui->srcLang->text().trimmed().toStdString();
+    const std::string targetLanguage = ui->targetLang->text().trimmed().toStdString();
+
+    QString translated;
+    if (isOpenAI)
+    {
+        translated = translator.translate_by_openai(sourceText, sourceLanguage, targetLanguage, apiToken);
+    }
+    else if (isGithub)
+    {
+        translated = translator.translate_by_github_model(sourceText, sourceLanguage, targetLanguage, apiToken);
+    }
+    else if (isGemini)
+    {
+        translated = translator.translate_by_gemini(sourceText, sourceLanguage, targetLanguage, apiToken);
+    }
+    else if (isGoogle)
+    {
+        translated = translator.translate_by_google_translate(sourceText, sourceLanguage, targetLanguage, apiToken);
+    }
+
+    if (translated.isEmpty())
+    {
+        return;
+    }
+
+    auto *targetItem = ui->subtitleTable->item(row, 1);
+    if (!targetItem)
+    {
+        targetItem = new QTableWidgetItem();
+        ui->subtitleTable->setItem(row, 1, targetItem);
+    }
+    targetItem->setText(translated);
+
+    qDebug() << "sourceLanguage:" << ui->srcLang->text().trimmed();
+    qDebug() << "targetLanguage:" << ui->targetLang->text().trimmed();
+    qDebug() << "sourceText:" << sourceText;
+    qDebug() << "translated:" << translated;
 }
 
 void TranslatorWindow::refreshModelList(const QString &service)
@@ -436,4 +508,125 @@ void TranslatorWindow::refreshModelList(const QString &service)
     {
         ui->modelList->addItems(models);
     }
+}
+
+void TranslatorWindow::translateAll()
+{
+    if (!validateLanguageInputs())
+    {
+        return;
+    }
+
+    const QString provider = settings.value("ai/lang/provider").toString().trimmed();
+    if (provider.isEmpty())
+    {
+        QMessageBox::warning(this, tr("Missing provider"), tr("Please select an AI provider before translating."));
+        return;
+    }
+
+    const QString apiToken = settings.value("ai/lang/apiKey").toString().trimmed();
+    if (apiToken.isEmpty())
+    {
+        QMessageBox::warning(this, tr("Missing API key"), tr("Please configure an API key before translating."));
+        return;
+    }
+
+    const bool isOpenAI = provider.compare(QStringLiteral("OpenAI"), Qt::CaseInsensitive) == 0;
+    const bool isGithub = provider.compare(QStringLiteral("Github Model"), Qt::CaseInsensitive) == 0;
+    const bool isGemini = provider.compare(QStringLiteral("Gemini"), Qt::CaseInsensitive) == 0;
+    const bool isGoogle = provider.compare(QStringLiteral("Google Translate"), Qt::CaseInsensitive) == 0;
+
+    if (!isOpenAI && !isGithub && !isGemini && !isGoogle)
+    {
+        QMessageBox::warning(this, tr("Unsupported provider"), tr("The selected provider is not supported for translation."));
+        return;
+    }
+
+    const std::string sourceLanguage = ui->srcLang->text().trimmed().toStdString();
+    const std::string targetLanguage = ui->targetLang->text().trimmed().toStdString();
+
+    const int rowCount = ui->subtitleTable->rowCount();
+    for (int row = 0; row < rowCount; ++row)
+    {
+        const QTableWidgetItem *sourceItem = ui->subtitleTable->item(row, 0);
+        const QString sourceText = sourceItem ? sourceItem->text() : QString();
+        if (sourceText.trimmed().isEmpty())
+        {
+            continue;
+        }
+
+        QString translated;
+        if (isOpenAI)
+        {
+            translated = translator.translate_by_openai(sourceText, sourceLanguage, targetLanguage, apiToken);
+        }
+        else if (isGithub)
+        {
+            translated = translator.translate_by_github_model(sourceText, sourceLanguage, targetLanguage, apiToken);
+        }
+        else if (isGemini)
+        {
+            translated = translator.translate_by_gemini(sourceText, sourceLanguage, targetLanguage, apiToken);
+        }
+        else if (isGoogle)
+        {
+            translated = translator.translate_by_google_translate(sourceText, sourceLanguage, targetLanguage, apiToken);
+        }
+
+        if (translated.isEmpty())
+        {
+            continue;
+        }
+
+        auto *targetItem = ui->subtitleTable->item(row, 1);
+        if (!targetItem)
+        {
+            targetItem = new QTableWidgetItem();
+            ui->subtitleTable->setItem(row, 1, targetItem);
+        }
+        targetItem->setText(translated);
+    }
+}
+
+QStringList TranslatorWindow::targetTexts() const
+{
+    QStringList targets;
+    const int rowCount = ui->subtitleTable->rowCount();
+    targets.reserve(rowCount);
+
+    for (int row = 0; row < rowCount; ++row)
+    {
+        const QTableWidgetItem *targetItem = ui->subtitleTable->item(row, 1);
+        targets.append(targetItem ? targetItem->text() : QString());
+    }
+
+    return targets;
+}
+
+bool TranslatorWindow::validateLanguageInputs()
+{
+    const QString sourceLang = ui->srcLang->text().trimmed();
+    const QString targetLang = ui->targetLang->text().trimmed();
+
+    if (!sourceLang.isEmpty() && !targetLang.isEmpty())
+    {
+        return true;
+    }
+
+    QString message;
+    if (sourceLang.isEmpty() && targetLang.isEmpty())
+    {
+        message = tr("Please enter both source and target languages before translating.");
+    }
+    else if (sourceLang.isEmpty())
+    {
+        message = tr("Please enter a source language before translating.");
+    }
+    else
+    {
+        message = tr("Please enter a target language before translating.");
+    }
+
+    QMessageBox::warning(this, tr("Missing language"), message);
+    return false;
 }
