@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="menu">
+    <file>assets/google-translate.svg</file>
+    <file>assets/settings.svg</file>
     <file>assets/add.svg</file>
     <file>assets/remove.svg</file>
     <file>assets/close.svg</file>

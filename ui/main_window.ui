@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>SRT Editor</string>
+   <string>SRT Editor free</string>
   </property>
   <property name="windowIcon">
    <iconset resource="app_qrc.qrc">
@@ -63,6 +63,8 @@
     <addaction name="actionSave"/>
     <addaction name="actionSave_as"/>
     <addaction name="separator"/>
+    <addaction name="actionSettings"/>
+    <addaction name="separator"/>
     <addaction name="actionClose"/>
    </widget>
    <widget class="QMenu" name="menuAbout">
@@ -105,8 +107,12 @@
    <addaction name="actionOpen"/>
    <addaction name="actionSave"/>
    <addaction name="separator"/>
+   <addaction name="actionSettings"/>
+   <addaction name="separator"/>
    <addaction name="actionAdd_subtitle"/>
    <addaction name="actionRemove_subtitle"/>
+   <addaction name="separator"/>
+   <addaction name="actionAuto_translate"/>
   </widget>
   <action name="actionNew">
    <property name="icon">
@@ -173,6 +179,10 @@
    </property>
   </action>
   <action name="actionAuto_translate">
+   <property name="icon">
+    <iconset resource="app_qrc.qrc">
+     <normaloff>:/menu/assets/google-translate.svg</normaloff>:/menu/assets/google-translate.svg</iconset>
+   </property>
    <property name="text">
     <string>Auto translate</string>
    </property>
@@ -193,6 +203,15 @@
    </property>
    <property name="text">
     <string>Remove subtitle</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="icon">
+    <iconset resource="app_qrc.qrc">
+     <normaloff>:/menu/assets/settings.svg</normaloff>:/menu/assets/settings.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Settings</string>
    </property>
   </action>
  </widget>
