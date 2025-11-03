@@ -38,6 +38,7 @@ public:
 
 private slots:
     void refreshModelList(const QString &service);
+    void handleTranslateButton();
 
 private:
     std::unique_ptr<Ui::TranslatorWindow> ui;

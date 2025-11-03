@@ -5,6 +5,7 @@
 #include <QComboBox>
 #include <QDebug>
 #include <QHeaderView>
+#include <QPushButton>
 #include <QTableWidgetItem>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -324,7 +325,13 @@ TranslatorWindow::TranslatorWindow(QWidget *parent)
     : QDialog(parent), ui(std::make_unique<Ui::TranslatorWindow>())
 {
     ui->setupUi(this);
-    ui->subtitleTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    auto *header = ui->subtitleTable->horizontalHeader();
+    header->setSectionResizeMode(0, QHeaderView::Stretch);
+    header->setSectionResizeMode(1, QHeaderView::Stretch);
+    header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    ui->subtitleTable->setColumnWidth(2, 110);
+
+    connect(ui->btnCancle, &QPushButton::clicked, this, &TranslatorWindow::close);
 
     const QString provider = settings.value("ai/lang/provider").toString().trimmed();
     if (!provider.isEmpty())
@@ -349,7 +356,48 @@ void TranslatorWindow::setSourceTexts(const QStringList &sourceTexts)
             ui->subtitleTable->setItem(row, 0, sourceItem);
         }
         sourceItem->setText(sourceTexts.at(row));
+
+        auto *translateButton = qobject_cast<QPushButton *>(ui->subtitleTable->cellWidget(row, 2));
+        if (!translateButton)
+        {
+            translateButton = new QPushButton(tr("Translate"), ui->subtitleTable);
+            translateButton->setCursor(Qt::PointingHandCursor);
+            translateButton->setFocusPolicy(Qt::NoFocus);
+            ui->subtitleTable->setCellWidget(row, 2, translateButton);
+
+            connect(translateButton, &QPushButton::clicked, this, &TranslatorWindow::handleTranslateButton);
+        }
+
+        translateButton->setProperty("row", row);
+        translateButton->setText(tr("Translate"));
     }
+}
+
+void TranslatorWindow::handleTranslateButton()
+{
+    const auto *button = qobject_cast<QPushButton *>(sender());
+    if (!button)
+    {
+        return;
+    }
+
+    bool ok = false;
+    int row = button->property("row").toInt(&ok);
+    if (!ok)
+    {
+        row = ui->subtitleTable->indexAt(button->pos()).row();
+    }
+
+    if (row < 0 || row >= ui->subtitleTable->rowCount())
+    {
+        return;
+    }
+
+    const QTableWidgetItem *sourceItem = ui->subtitleTable->item(row, 0);
+    const QString sourceText = sourceItem ? sourceItem->text() : QString();
+    const int displayRow = row + 1;
+
+    qDebug().noquote() << QStringLiteral("Translate row %1: %2").arg(displayRow).arg(sourceText);
 }
 
 void TranslatorWindow::refreshModelList(const QString &service)
