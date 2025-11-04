@@ -27,9 +27,12 @@ add_executable(SRT-Editor
     inc/translator.h
     src/translator_window.cpp
     inc/translator_window.h
+    src/text_to_speech_window.cpp
+    inc/text_to_speech_window.h
     ui/main_window.ui
     ui/settings_window.ui
     ui/translator_window.ui
+    ui/text_to_speech_window.ui
     ui/app_qrc.qrc
 )
 

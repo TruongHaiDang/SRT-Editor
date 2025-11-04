@@ -4,8 +4,13 @@
 #include <QTreeWidgetItem>
 #include <QString>
 #include <memory>
-
 #include "settings.h"
+#include "ui_settings_window.h"
+#include <QComboBox>
+#include <QLabel>
+#include <QLineEdit>
+#include <QScrollArea>
+#include <QVBoxLayout>
 
 namespace Ui
 {
@@ -26,4 +31,5 @@ private:
 
     void on_item_change(QTreeWidgetItem *current, QTreeWidgetItem *previous);
     void draw_ai_provider_language();
+    void draw_ai_provider_text_to_speech();
 };
