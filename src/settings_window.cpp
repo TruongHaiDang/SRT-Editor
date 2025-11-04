@@ -1,13 +1,5 @@
 #include "settings_window.h"
 
-#include "ui_settings_window.h"
-
-#include <QComboBox>
-#include <QLabel>
-#include <QLineEdit>
-#include <QScrollArea>
-#include <QVBoxLayout>
-
 SettingsWindow::SettingsWindow(QWidget *parent)
     : QDialog(parent), ui(std::make_unique<Ui::SettingsWindow>())
 {
@@ -35,6 +27,11 @@ void SettingsWindow::on_item_change(QTreeWidgetItem *current, QTreeWidgetItem *p
     if (text == tr("Language"))
     {
         draw_ai_provider_language();
+        return;
+    }
+    else if (text == tr("Audio"))
+    {
+        draw_ai_provider_text_to_speech();
         return;
     }
 
@@ -78,6 +75,61 @@ void SettingsWindow::draw_ai_provider_language()
     apiKeyEdit->setObjectName(QStringLiteral("apiKeyEdit"));
     apiKeyEdit->setEchoMode(QLineEdit::Password);
     const QString apiKeyKey = QStringLiteral("ai/lang/apiKey");
+    apiKeyEdit->setText(settings.value(apiKeyKey).toString());
+
+    layout->addWidget(providerLabel);
+    layout->addWidget(providerCombo);
+    layout->addWidget(apiKeyLabel);
+    layout->addWidget(apiKeyEdit);
+    layout->addStretch(1);
+
+    container->setLayout(layout);
+    ui->settingContent->setWidget(container);
+
+    connect(providerCombo, &QComboBox::currentTextChanged, this, [this, providerKey](const QString &value)
+            {
+        settings.setValue(providerKey, value);
+        settings.sync(); });
+
+    connect(apiKeyEdit, &QLineEdit::textChanged, this, [this, apiKeyKey](const QString &value)
+            {
+        settings.setValue(apiKeyKey, value);
+        settings.sync(); });
+}
+
+void SettingsWindow::draw_ai_provider_text_to_speech()
+{
+    QWidget *oldWidget = ui->settingContent->takeWidget();
+    if (oldWidget)
+    {
+        oldWidget->deleteLater();
+    }
+
+    QWidget *container = new QWidget(ui->settingContent);
+    auto *layout = new QVBoxLayout(container);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(12);
+
+    auto *providerLabel = new QLabel(tr("API Provider"), container);
+    providerLabel->setObjectName(QStringLiteral("providerLabel"));
+
+    auto *providerCombo = new QComboBox(container);
+    providerCombo->setObjectName(QStringLiteral("providerCombo"));
+    // providerCombo->addItems({tr("OpenAI"), tr("Github Model"), tr("Google Translate"), tr("Gemini")});
+    providerCombo->addItems({tr("ElevenLabs"), tr("OpenAI")});
+
+    const QString providerKey = QStringLiteral("ai/audio/provider");
+    const QString storedProvider = settings.value(providerKey, providerCombo->itemText(0)).toString();
+    const int providerIndex = providerCombo->findText(storedProvider, Qt::MatchFixedString);
+    providerCombo->setCurrentIndex(providerIndex == -1 ? 0 : providerIndex);
+
+    auto *apiKeyLabel = new QLabel(tr("API Key"), container);
+    apiKeyLabel->setObjectName(QStringLiteral("apiKeyLabel"));
+
+    auto *apiKeyEdit = new QLineEdit(container);
+    apiKeyEdit->setObjectName(QStringLiteral("apiKeyEdit"));
+    apiKeyEdit->setEchoMode(QLineEdit::Password);
+    const QString apiKeyKey = QStringLiteral("ai/audio/apiKey");
     apiKeyEdit->setText(settings.value(apiKeyKey).toString());
 
     layout->addWidget(providerLabel);

@@ -1,19 +1,5 @@
 #include "translator.h"
 
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonValue>
-#include <QByteArray>
-#include <QTextStream>
-#include <QStringList>
-
-#include <curl/curl.h>
-
-#include <cstdlib>
-#include <string>
-#include <mutex>
-
 namespace
 {
 size_t writeCallback(void *contents, size_t size, size_t nmemb, void *userp)
@@ -83,6 +69,9 @@ QString Translator::translate_by_github_model(QString input, std::string src_lan
     const QString trimmedToken = token.trimmed();
     if (trimmedToken.isEmpty())
     {
+        QMessageBox::warning(nullptr,
+                             QObject::tr("Missing API key"),
+                             QObject::tr("Please configure an API key for Github Model before translating."));
         return input;
     }
 
@@ -181,6 +170,9 @@ QString Translator::translate_by_openai(QString input, std::string src_lang, std
     const QString trimmedToken = token.trimmed();
     if (trimmedToken.isEmpty())
     {
+        QMessageBox::warning(nullptr,
+                             QObject::tr("Missing API key"),
+                             QObject::tr("Please configure an API key for OpenAI before translating."));
         return input;
     }
 
@@ -268,12 +260,22 @@ QString Translator::translate_by_openai(QString input, std::string src_lang, std
 
 QString Translator::translate_by_gemini(QString input, std::string src_lang, std::string target_lang, const QString &token)
 {
-    Q_UNUSED(token);
+    if (token.trimmed().isEmpty())
+    {
+        QMessageBox::warning(nullptr,
+                             QObject::tr("Missing API key"),
+                             QObject::tr("Please configure an API key for Gemini before translating."));
+    }
     return input;
 }
 
 QString Translator::translate_by_google_translate(QString input, std::string src_lang, std::string target_lang, const QString &token)
 {
-    Q_UNUSED(token);
+    if (token.trimmed().isEmpty())
+    {
+        QMessageBox::warning(nullptr,
+                             QObject::tr("Missing API key"),
+                             QObject::tr("Please configure an API key for Google Translate before translating."));
+    }
     return input;
 }

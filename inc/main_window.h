@@ -6,7 +6,24 @@
 #include <memory>
 #include <QString>
 #include <QDesktopServices>
-
+#include "translator_window.h"
+#include "settings_window.h"
+#include "text_to_speech_window.h"
+#include <QDir>
+#include <algorithm>
+#include <QFile>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QHeaderView>
+#include <QMessageBox>
+#include <QRegularExpression>
+#include <QTableWidgetItem>
+#include <QTextStream>
+#include <QTime>
+#include <QtGlobal>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <QStringConverter>
+#endif
 #include "settings.h"
 #include "ui_main_window.h"
 
@@ -43,4 +60,5 @@ private:
     void remove_subtitle();
     void open_translator_window();
     void open_portfolio_website();
+    void open_text_to_speech_window();
 };

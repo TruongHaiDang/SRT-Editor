@@ -87,9 +87,16 @@
     <addaction name="actionAdd_subtitle"/>
     <addaction name="actionRemove_subtitle"/>
    </widget>
+   <widget class="QMenu" name="menuAudio">
+    <property name="title">
+     <string>Audio</string>
+    </property>
+    <addaction name="actionText_to_Speech"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuLanguages"/>
+   <addaction name="menuAudio"/>
    <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -113,6 +120,7 @@
    <addaction name="actionRemove_subtitle"/>
    <addaction name="separator"/>
    <addaction name="actionAuto_translate"/>
+   <addaction name="actionText_to_Speech"/>
   </widget>
   <action name="actionNew">
    <property name="icon">
@@ -212,6 +220,15 @@
    </property>
    <property name="text">
     <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionText_to_Speech">
+   <property name="icon">
+    <iconset resource="app_qrc.qrc">
+     <normaloff>:/menu/assets/speaker.svg</normaloff>:/menu/assets/speaker.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Text to Speech</string>
    </property>
   </action>
  </widget>

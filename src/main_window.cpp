@@ -1,22 +1,4 @@
 #include "main_window.h"
-#include "translator_window.h"
-#include "settings_window.h"
-
-#include <QDir>
-#include <algorithm>
-#include <QFile>
-#include <QFileDialog>
-#include <QFileInfo>
-#include <QHeaderView>
-#include <QMessageBox>
-#include <QRegularExpression>
-#include <QTableWidgetItem>
-#include <QTextStream>
-#include <QTime>
-#include <QtGlobal>
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-#include <QStringConverter>
-#endif
 
 namespace
 {
@@ -74,6 +56,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionRemove_subtitle, &QAction::triggered, this, &MainWindow::remove_subtitle);
     connect(ui->actionAuto_translate, &QAction::triggered, this, &MainWindow::open_translator_window);
     connect(ui->actionAuthor, &QAction::triggered, this, &MainWindow::open_portfolio_website);
+    connect(ui->actionText_to_Speech, &QAction::triggered, this, &MainWindow::open_text_to_speech_window);
 
     init_settings();
     ui->statusbar->showMessage("Ready!");
@@ -410,4 +393,10 @@ void MainWindow::open_translator_window()
 void MainWindow::open_portfolio_website()
 {
     QDesktopServices::openUrl(QUrl(QStringLiteral("https://truonghaidang.com")));
+}
+
+void MainWindow::open_text_to_speech_window()
+{
+    TextToSpeechWindow text_to_speech_window(this);
+    text_to_speech_window.exec();
 }

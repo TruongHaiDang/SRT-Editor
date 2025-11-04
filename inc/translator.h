@@ -3,6 +3,21 @@
 
 #include <QString>
 #include <string>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QMessageBox>
+#include <QObject>
+#include <QByteArray>
+#include <QTextStream>
+#include <QStringList>
+
+#include <curl/curl.h>
+
+#include <cstdlib>
+#include <string>
+#include <mutex>
 
 class Translator
 {
