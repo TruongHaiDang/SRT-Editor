@@ -144,6 +144,13 @@
             </item>
            </layout>
           </item>
+          <item>
+           <widget class="QPushButton" name="pushButtonOutputDir">
+            <property name="text">
+             <string>Output Folder...</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -332,6 +339,11 @@
        </column>
        <column>
         <property name="text">
+         <string>File path</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
          <string>Action</string>
         </property>
        </column>
@@ -365,13 +377,6 @@
       <widget class="QPushButton" name="btnConvertAll">
        <property name="text">
         <string>Convert all</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnOk">
-       <property name="text">
-        <string>Ok</string>
        </property>
       </widget>
      </item>
