@@ -1,5 +1,7 @@
 #include "main_window.h"
 
+#include <QVector>
+
 namespace
 {
     QString computeDurationString(const QString &start, const QString &end)
@@ -398,5 +400,27 @@ void MainWindow::open_portfolio_website()
 void MainWindow::open_text_to_speech_window()
 {
     TextToSpeechWindow text_to_speech_window(this);
+    QVector<TextToSpeechWindow::Entry> entries;
+    const int rowCount = ui->subtitleTable->rowCount();
+    entries.reserve(rowCount);
+
+    for (int row = 0; row < rowCount; ++row)
+    {
+        TextToSpeechWindow::Entry entry;
+
+        if (QTableWidgetItem *textItem = ui->subtitleTable->item(row, 3))
+        {
+            entry.text = textItem->text();
+        }
+
+        if (QTableWidgetItem *durationItem = ui->subtitleTable->item(row, 2))
+        {
+            entry.duration = durationItem->text();
+        }
+
+        entries.push_back(entry);
+    }
+
+    text_to_speech_window.set_entries(entries);
     text_to_speech_window.exec();
 }
