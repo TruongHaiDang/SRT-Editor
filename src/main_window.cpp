@@ -1,39 +1,158 @@
 #include "main_window.h"
 
+#include <QRegularExpression>
 #include <QVector>
+#include <algorithm>
 
 namespace
 {
-    QString computeDurationString(const QString &start, const QString &end)
+    constexpr qint64 kMillisecondsPerDay = 24LL * 60 * 60 * 1000;
+
+    qint64 toMilliseconds(int hours, int minutes, int seconds, int milliseconds)
     {
-        const QTime startTime = QTime::fromString(start, QStringLiteral("hh:mm:ss,zzz"));
-        const QTime endTime = QTime::fromString(end, QStringLiteral("hh:mm:ss,zzz"));
+        return (((static_cast<qint64>(hours) * 60) + minutes) * 60 + seconds) * 1000 + milliseconds;
+    }
 
-        if (!startTime.isValid() || !endTime.isValid())
+    qint64 parseSrtTimestamp(const QString &value)
+    {
+        static const QRegularExpression pattern(QStringLiteral(R"(^(\d{2}):(\d{2}):(\d{2}),(\d{3})$)"));
+        const QRegularExpressionMatch match = pattern.match(value.trimmed());
+        if (!match.hasMatch())
+        {
+            return -1;
+        }
+
+        return toMilliseconds(match.captured(1).toInt(),
+                              match.captured(2).toInt(),
+                              match.captured(3).toInt(),
+                              match.captured(4).toInt());
+    }
+
+    qint64 parseFlexibleDuration(const QString &value)
+    {
+        const QString trimmed = value.trimmed();
+        if (trimmed.isEmpty())
+        {
+            return -1;
+        }
+
+        static const QRegularExpression longPattern(QStringLiteral(R"(^(\d{2}):(\d{2}):(\d{2})[\.,](\d{3})$)"));
+        QRegularExpressionMatch match = longPattern.match(trimmed);
+        if (match.hasMatch())
+        {
+            return toMilliseconds(match.captured(1).toInt(),
+                                  match.captured(2).toInt(),
+                                  match.captured(3).toInt(),
+                                  match.captured(4).toInt());
+        }
+
+        static const QRegularExpression mediumPattern(QStringLiteral(R"(^(\d{2}):(\d{2})[\.,](\d{3})$)"));
+        match = mediumPattern.match(trimmed);
+        if (match.hasMatch())
+        {
+            return toMilliseconds(0,
+                                  match.captured(1).toInt(),
+                                  match.captured(2).toInt(),
+                                  match.captured(3).toInt());
+        }
+
+        static const QRegularExpression secondsPattern(
+            QStringLiteral(R"((\d+)(?:[\.,](\d{1,3}))?\s*s?$)"),
+            QRegularExpression::CaseInsensitiveOption);
+        match = secondsPattern.match(trimmed);
+        if (match.hasMatch())
+        {
+            const qint64 seconds = match.captured(1).toLongLong();
+            QString fraction = match.captured(2);
+            int milliseconds = 0;
+            if (!fraction.isEmpty())
+            {
+                if (fraction.length() > 3)
+                {
+                    fraction = fraction.left(3);
+                }
+                while (fraction.length() < 3)
+                {
+                    fraction.append(QLatin1Char('0'));
+                }
+                milliseconds = fraction.toInt();
+            }
+
+            return seconds * 1000 + milliseconds;
+        }
+
+        return -1;
+    }
+
+    QString millisecondsToSrt(qint64 msecs)
+    {
+        if (msecs < 0)
         {
             return {};
         }
 
-        int msecs = startTime.msecsTo(endTime);
-        if (msecs < 0)
-        {
-            msecs += 24 * 60 * 60 * 1000;
-        }
-        if (msecs < 0)
-        {
-            return {};
-        }
-
-        const int hours = msecs / (60 * 60 * 1000);
-        const int minutes = (msecs / (60 * 1000)) % 60;
-        const int seconds = (msecs / 1000) % 60;
-        const int milliseconds = msecs % 1000;
+        const int hours = static_cast<int>(msecs / (60 * 60 * 1000));
+        const int minutes = static_cast<int>((msecs / (60 * 1000)) % 60);
+        const int seconds = static_cast<int>((msecs / 1000) % 60);
+        const int milliseconds = static_cast<int>(msecs % 1000);
 
         return QStringLiteral("%1:%2:%3,%4")
             .arg(hours, 2, 10, QLatin1Char('0'))
             .arg(minutes, 2, 10, QLatin1Char('0'))
             .arg(seconds, 2, 10, QLatin1Char('0'))
             .arg(milliseconds, 3, 10, QLatin1Char('0'));
+    }
+
+    QString computeDurationString(const QString &start, const QString &end)
+    {
+        const qint64 startMs = parseSrtTimestamp(start);
+        const qint64 endMs = parseSrtTimestamp(end);
+        if (startMs < 0 || endMs < 0)
+        {
+            return {};
+        }
+
+        qint64 diff = endMs - startMs;
+        if (diff < 0)
+        {
+            diff += kMillisecondsPerDay;
+        }
+        if (diff < 0)
+        {
+            return {};
+        }
+
+        return millisecondsToSrt(diff);
+    }
+
+    QString addDurationToTimestamp(const QString &start, const QString &duration)
+    {
+        const qint64 startMs = parseSrtTimestamp(start);
+        const qint64 durationMs = parseSrtTimestamp(duration);
+        if (startMs < 0 || durationMs < 0)
+        {
+            return {};
+        }
+
+        qint64 endMs = startMs + durationMs;
+        endMs %= kMillisecondsPerDay;
+        if (endMs < 0)
+        {
+            endMs += kMillisecondsPerDay;
+        }
+
+        return millisecondsToSrt(endMs);
+    }
+
+    QString normalizeDurationFromTts(const QString &rawDuration)
+    {
+        const qint64 durationMs = parseFlexibleDuration(rawDuration);
+        if (durationMs < 0)
+        {
+            return {};
+        }
+
+        return millisecondsToSrt(durationMs);
     }
 }
 
@@ -423,4 +542,44 @@ void MainWindow::open_text_to_speech_window()
 
     text_to_speech_window.set_entries(entries);
     text_to_speech_window.exec();
+
+    const QVector<TextToSpeechWindow::Entry> updatedEntries = text_to_speech_window.entries();
+    const int rowsToUpdate = std::min(rowCount, static_cast<int>(updatedEntries.size()));
+
+    for (int row = 0; row < rowsToUpdate; ++row)
+    {
+        const QString normalizedDuration = normalizeDurationFromTts(updatedEntries.at(row).duration);
+        if (normalizedDuration.isEmpty())
+        {
+            continue;
+        }
+
+        QTableWidgetItem *durationItem = ui->subtitleTable->item(row, 2);
+        if (!durationItem)
+        {
+            durationItem = new QTableWidgetItem();
+            ui->subtitleTable->setItem(row, 2, durationItem);
+        }
+        durationItem->setText(normalizedDuration);
+
+        QTableWidgetItem *startItem = ui->subtitleTable->item(row, 0);
+        if (!startItem)
+        {
+            continue;
+        }
+
+        const QString newEnd = addDurationToTimestamp(startItem->text(), normalizedDuration);
+        if (newEnd.isEmpty())
+        {
+            continue;
+        }
+
+        QTableWidgetItem *endItem = ui->subtitleTable->item(row, 1);
+        if (!endItem)
+        {
+            endItem = new QTableWidgetItem();
+            ui->subtitleTable->setItem(row, 1, endItem);
+        }
+        endItem->setText(newEnd);
+    }
 }
