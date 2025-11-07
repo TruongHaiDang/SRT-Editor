@@ -10,9 +10,39 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/ui)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Multimedia)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Multimedia)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(CURL REQUIRED)
+
+find_package(Taglib CONFIG QUIET)
+set(TAGLIB_ADDITIONAL_INCLUDE_DIRS "")
+
+if (NOT Taglib_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(taglib
+        GIT_REPOSITORY https://github.com/taglib/taglib.git
+        GIT_TAG v1.13
+    )
+    FetchContent_MakeAvailable(taglib)
+    set(TAGLIB_ADDITIONAL_INCLUDE_DIRS
+        ${taglib_SOURCE_DIR}
+        ${taglib_SOURCE_DIR}/taglib
+        ${taglib_SOURCE_DIR}/taglib/toolkit
+        ${taglib_BINARY_DIR}
+        ${taglib_BINARY_DIR}/taglib
+        ${taglib_BINARY_DIR}/taglib/toolkit)
+endif()
+
+set(TAGLIB_TARGET TagLib::tag)
+if (NOT TARGET ${TAGLIB_TARGET})
+    set(TAGLIB_TARGET Taglib::tag)
+endif()
+if (NOT TARGET ${TAGLIB_TARGET})
+    set(TAGLIB_TARGET tag)
+endif()
+if (NOT TARGET ${TAGLIB_TARGET})
+    message(FATAL_ERROR "Unable to locate TagLib target")
+endif()
 
 add_executable(SRT-Editor
     src/main.cpp
@@ -42,6 +72,10 @@ target_include_directories(SRT-Editor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/inc)
 
 target_link_libraries(SRT-Editor PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
-    Qt${QT_VERSION_MAJOR}::Multimedia
     CURL::libcurl
+    ${TAGLIB_TARGET}
 )
+
+if (TAGLIB_ADDITIONAL_INCLUDE_DIRS)
+    target_include_directories(SRT-Editor PRIVATE ${TAGLIB_ADDITIONAL_INCLUDE_DIRS})
+endif()
