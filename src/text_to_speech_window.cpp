@@ -50,29 +50,35 @@ TextToSpeechWindow::~TextToSpeechWindow() = default;
 
 void TextToSpeechWindow::init_general_settings()
 {
+    const QString provider = settings.value(QStringLiteral("ai/audio/provider"), QStringLiteral("ElevenLabs")).toString();
+
+    QList<QString> voices;
+    QList<QString> models;
+
+    const bool useElevenLabs = provider.compare(QStringLiteral("ElevenLabs"), Qt::CaseInsensitive) == 0;
+    const QString token = settings.value(QStringLiteral("ai/audio/apiKey")).toString();
+    if (useElevenLabs)
+    {
+        Audio audio;
+        voices = audio.elevenlabs_get_voices(token);
+        models = audio.elevenlabs_get_models(token);
+    }
+
+    if (voices.isEmpty())
+    {
+        voices = openaiVoices;
+    }
+
+    if (models.isEmpty())
+    {
+        models = openaiModels;
+    }
+
     ui->comboBoxVoices->clear();
-    ui->comboBoxVoices->addItems(openaiVoices);
+    ui->comboBoxVoices->addItems(voices);
 
     ui->comboBoxModels->clear();
-    ui->comboBoxModels->addItems(openaiModels);
-
-    const QString voiceKey = QStringLiteral("tts/general/voice");
-    const QString storedVoice = settings.value(voiceKey).toString();
-    if (!storedVoice.isEmpty() && ui->comboBoxVoices->findText(storedVoice) == -1)
-    {
-        ui->comboBoxVoices->addItem(storedVoice);
-    }
-    const int voiceIndex = ui->comboBoxVoices->findText(storedVoice);
-    ui->comboBoxVoices->setCurrentIndex(voiceIndex == -1 ? 0 : voiceIndex);
-
-    const QString modelKey = QStringLiteral("tts/general/model");
-    const QString storedModel = settings.value(modelKey).toString();
-    if (!storedModel.isEmpty() && ui->comboBoxModels->findText(storedModel) == -1)
-    {
-        ui->comboBoxModels->addItem(storedModel);
-    }
-    const int modelIndex = ui->comboBoxModels->findText(storedModel);
-    ui->comboBoxModels->setCurrentIndex(modelIndex == -1 ? 0 : modelIndex);
+    ui->comboBoxModels->addItems(models);
 
     const QString outputKey = QStringLiteral("tts/general/output_format");
     const QString storedOutput = settings.value(outputKey, ui->comboBoxOutputType->itemText(0)).toString();
@@ -91,16 +97,6 @@ void TextToSpeechWindow::init_general_settings()
                                         ui->horizontalSliderSpeed->maximum());
     ui->horizontalSliderSpeed->setValue(boundedSpeed);
     update_speed_label(boundedSpeed);
-
-    connect(ui->comboBoxVoices, &QComboBox::currentTextChanged, this, [this, voiceKey](const QString &value) {
-        settings.setValue(voiceKey, value);
-        settings.sync();
-    });
-
-    connect(ui->comboBoxModels, &QComboBox::currentTextChanged, this, [this, modelKey](const QString &value) {
-        settings.setValue(modelKey, value);
-        settings.sync();
-    });
 
     connect(ui->comboBoxOutputType, &QComboBox::currentTextChanged, this, [this, outputKey](const QString &value) {
         settings.setValue(outputKey, value);

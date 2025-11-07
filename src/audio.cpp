@@ -1,28 +1,5 @@
 #include "audio.h"
-
-#include <QByteArray>
-#include <QDir>
-#include <QEventLoop>
-#include <QFile>
-#include <QFileInfo>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QMessageBox>
-#include <QObject>
-#include <QTimer>
-#include <QUrl>
-
-#include <curl/curl.h>
-
-#include <mutex>
-#include <vector>
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-#include <QAudioOutput>
-#include <QMediaPlayer>
-#else
-#include <QMediaPlayer>
-#endif
+#include "settings.h"
 
 namespace
 {
@@ -89,6 +66,92 @@ QString describeCurlFailure(CURLcode code, long httpStatus)
         message += QObject::tr(" HTTP status: %1.").arg(httpStatus);
     }
     return message;
+}
+
+QByteArray performElevenLabsJsonGet(const QByteArray &url,
+                                    const QString &token,
+                                    bool silent,
+                                    const QString &errorTitle,
+                                    long *outStatus,
+                                    CURLcode *outCurlCode)
+{
+    ensureCurlInitialized();
+
+    CURL *curl = curl_easy_init();
+    if (!curl)
+    {
+        return {};
+    }
+
+    std::vector<unsigned char> response;
+    struct curl_slist *headers = nullptr;
+
+    const std::string authHeader = "xi-api-key: " + token.toStdString();
+    headers = curl_slist_append(headers, "Accept: application/json");
+    headers = curl_slist_append(headers, authHeader.c_str());
+
+    curl_easy_setopt(curl, CURLOPT_URL, url.constData());
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeBinaryCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "SRT-Editor/1.0");
+
+    const CURLcode res = curl_easy_perform(curl);
+    long httpStatus = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpStatus);
+    if (outStatus)
+    {
+        *outStatus = httpStatus;
+    }
+    if (outCurlCode)
+    {
+        *outCurlCode = res;
+    }
+
+    if (headers)
+    {
+        curl_slist_free_all(headers);
+    }
+    curl_easy_cleanup(curl);
+
+    if (!silent && (res != CURLE_OK || httpStatus >= 400))
+    {
+        QMessageBox::warning(nullptr,
+                             errorTitle,
+                             describeCurlFailure(res, httpStatus));
+        return {};
+    }
+
+    if (response.empty())
+    {
+        return {};
+    }
+
+    return QByteArray(reinterpret_cast<const char *>(response.data()), static_cast<int>(response.size()));
+}
+
+QList<QString> extractIdsFromArray(const QJsonArray &array, const QString &idKey)
+{
+    QList<QString> ids;
+    ids.reserve(array.size());
+
+    for (const QJsonValue &value : array)
+    {
+        if (!value.isObject())
+        {
+            continue;
+        }
+
+        const QString id = value.toObject().value(idKey).toString().trimmed();
+        if (!id.isEmpty())
+        {
+            ids.append(id);
+        }
+    }
+
+    return ids;
 }
 } // namespace
 
@@ -204,6 +267,106 @@ void Audio::elevenlabs_text_to_speech(QString text,
     }
 }
 
+QList<QString> Audio::elevenlabs_get_voices(const QString &token)
+{
+    const QString trimmedToken = token.trimmed();
+    if (trimmedToken.isEmpty())
+    {
+        QMessageBox::warning(nullptr,
+                             QObject::tr("Missing API key"),
+                             QObject::tr("Please configure an API key for ElevenLabs in Settings ▸ Audio."));
+        return {};
+    }
+
+    long httpStatus = 0;
+    CURLcode curlCode = CURLE_OK;
+    const QByteArray payload = performElevenLabsJsonGet(QByteArrayLiteral("https://api.elevenlabs.io/v1/voices"),
+                                                        trimmedToken,
+                                                        true,
+                                                        QObject::tr("Unable to fetch voices"),
+                                                        &httpStatus,
+                                                        &curlCode);
+    if (payload.isEmpty())
+    {
+        if (httpStatus == 401)
+        {
+            QMessageBox::warning(nullptr,
+                                 QObject::tr("Invalid ElevenLabs API key"),
+                                 QObject::tr("Your ElevenLabs API key was rejected (HTTP 401). Please update it in Settings ▸ Audio."));
+        }
+        else if (httpStatus >= 400 || curlCode != CURLE_OK)
+        {
+            QMessageBox::warning(nullptr,
+                                 QObject::tr("Unable to fetch voices"),
+                                 describeCurlFailure(curlCode, httpStatus));
+        }
+        return {};
+    }
+
+    const QJsonDocument doc = QJsonDocument::fromJson(payload);
+    if (doc.isArray())
+    {
+        return extractIdsFromArray(doc.array(), QStringLiteral("voice_id"));
+    }
+
+    if (doc.isObject())
+    {
+        return extractIdsFromArray(doc.object().value(QStringLiteral("voices")).toArray(), QStringLiteral("voice_id"));
+    }
+
+    return {};
+}
+
+QList<QString> Audio::elevenlabs_get_models(const QString &token)
+{
+    const QString trimmedToken = token.trimmed();
+    if (trimmedToken.isEmpty())
+    {
+        QMessageBox::warning(nullptr,
+                             QObject::tr("Missing API key"),
+                             QObject::tr("Please configure an API key for ElevenLabs in Settings ▸ Audio."));
+        return {};
+    }
+
+    long httpStatus = 0;
+    CURLcode curlCode = CURLE_OK;
+    const QByteArray payload = performElevenLabsJsonGet(QByteArrayLiteral("https://api.elevenlabs.io/v1/models"),
+                                                        trimmedToken,
+                                                        true,
+                                                        QObject::tr("Unable to fetch models"),
+                                                        &httpStatus,
+                                                        &curlCode);
+    if (payload.isEmpty())
+    {
+        if (httpStatus == 401)
+        {
+            QMessageBox::warning(nullptr,
+                                 QObject::tr("Invalid ElevenLabs API key"),
+                                 QObject::tr("Your ElevenLabs API key was rejected (HTTP 401). Please update it in Settings ▸ Audio."));
+        }
+        else if (httpStatus >= 400 || curlCode != CURLE_OK)
+        {
+            QMessageBox::warning(nullptr,
+                                 QObject::tr("Unable to fetch models"),
+                                 describeCurlFailure(curlCode, httpStatus));
+        }
+        return {};
+    }
+
+    QList<QString> models;
+    const QJsonDocument doc = QJsonDocument::fromJson(payload);
+    if (doc.isArray())
+    {
+        models = extractIdsFromArray(doc.array(), QStringLiteral("model_id"));
+    }
+    else if (doc.isObject())
+    {
+        models = extractIdsFromArray(doc.object().value(QStringLiteral("models")).toArray(), QStringLiteral("model_id"));
+    }
+
+    return models;
+}
+
 void Audio::openai_text_to_speech(QString text, std::string filePath, std::string token)
 {
     this->openai_text_to_speech(text, filePath, QString(), QString(), token);
@@ -269,7 +432,7 @@ void Audio::openai_text_to_speech(QString text,
         {QStringLiteral("voice"), voiceName},
         {QStringLiteral("input"), trimmedText},
         {QStringLiteral("response_format"), QStringLiteral("mp3")}};
-
+    
     const QByteArray jsonBytes = QJsonDocument(payload).toJson(QJsonDocument::Compact);
 
     curl_easy_setopt(curl, CURLOPT_URL, "https://api.openai.com/v1/audio/speech");
@@ -322,44 +485,36 @@ double Audio::get_audio_duration_seconds(const std::string &filePath)
         return 0.0;
     }
 
-    QEventLoop loop;
-    QTimer timeout;
-    timeout.setSingleShot(true);
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    QMediaPlayer player;
-    QAudioOutput audioOutput;
-    player.setAudioOutput(&audioOutput);
-    QObject::connect(&player, &QMediaPlayer::mediaStatusChanged, &loop, [&](QMediaPlayer::MediaStatus status) {
-        if (status == QMediaPlayer::LoadedMedia || status == QMediaPlayer::InvalidMedia || status == QMediaPlayer::NoMedia)
-        {
-            loop.quit();
-        }
-    });
-    QObject::connect(&player, &QMediaPlayer::errorOccurred, &loop, [&](auto) { loop.quit(); });
-    player.setSource(QUrl::fromLocalFile(qFilePath));
+#ifdef _WIN32
+    const std::wstring widePath = qFilePath.toStdWString();
+    TagLib::FileRef fileRef(widePath.c_str());
 #else
-    QMediaPlayer player;
-    QObject::connect(&player, &QMediaPlayer::mediaStatusChanged, &loop, [&](QMediaPlayer::MediaStatus status) {
-        if (status == QMediaPlayer::LoadedMedia || status == QMediaPlayer::InvalidMedia || status == QMediaPlayer::NoMedia)
-        {
-            loop.quit();
-        }
-    });
-    QObject::connect(&player, SIGNAL(error(QMediaPlayer::Error)), &loop, SLOT(quit()));
-    player.setMedia(QUrl::fromLocalFile(qFilePath));
+    QByteArray pathBytes = QFile::encodeName(qFilePath);
+    TagLib::FileRef fileRef(pathBytes.constData());
 #endif
 
-    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
-    timeout.start(5000);
-
-    loop.exec();
-
-    const qint64 durationMs = player.duration();
-    if (durationMs <= 0)
+    if (fileRef.isNull())
     {
         return 0.0;
     }
 
-    return static_cast<double>(durationMs) / 1000.0;
+    const TagLib::AudioProperties *properties = fileRef.audioProperties();
+    if (!properties)
+    {
+        return 0.0;
+    }
+
+    const int lengthMs = properties->lengthInMilliseconds();
+    if (lengthMs > 0)
+    {
+        return static_cast<double>(lengthMs) / 1000.0;
+    }
+
+    const int lengthSeconds = properties->length();
+    if (lengthSeconds > 0)
+    {
+        return static_cast<double>(lengthSeconds);
+    }
+
+    return 0.0;
 }
