@@ -2,6 +2,7 @@
 
 #include <QRegularExpression>
 #include <QVector>
+#include <QPixmap>
 #include <algorithm>
 
 namespace
@@ -160,7 +161,12 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(std::make_unique<Ui::MainWindow>())
 {
     ui->setupUi(this);
-    baseWindowTitle_ = windowTitle();
+
+    const QString displayTitle = QStringLiteral("%1 Free %2")
+                                     .arg(QString::fromUtf8(SRT_EDITOR_NAME))
+                                     .arg(QString::fromUtf8(SRT_EDITOR_VERSION));
+    setWindowTitle(displayTitle);
+    baseWindowTitle_ = displayTitle;
 
     ui->subtitleTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->subtitleTable->horizontalHeader()->setStretchLastSection(true);
@@ -177,6 +183,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionRemove_subtitle, &QAction::triggered, this, &MainWindow::remove_subtitle);
     connect(ui->actionAuto_translate, &QAction::triggered, this, &MainWindow::open_translator_window);
     connect(ui->actionAuthor, &QAction::triggered, this, &MainWindow::open_portfolio_website);
+    connect(ui->actionSoftware, &QAction::triggered, this, &MainWindow::show_software_info);
     connect(ui->actionText_to_Speech, &QAction::triggered, this, &MainWindow::open_text_to_speech_window);
 
     init_settings();
@@ -514,6 +521,37 @@ void MainWindow::open_translator_window()
 void MainWindow::open_portfolio_website()
 {
     QDesktopServices::openUrl(QUrl(QStringLiteral("https://truonghaidang.com")));
+}
+
+void MainWindow::show_software_info()
+{
+    QMessageBox about(this);
+    about.setWindowTitle(tr("About %1").arg(QString::fromUtf8(SRT_EDITOR_NAME)));
+
+    QPixmap iconPixmap(QStringLiteral(":/app/assets/srt-file.svg"));
+    if (!iconPixmap.isNull())
+    {
+        about.setIconPixmap(iconPixmap.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+
+    const QString email = QStringLiteral("truonghaidang@truonghaidang.com");
+    const QString phone = QStringLiteral("+84907082941");
+    const QString body = tr("<div style='text-align:left;'>"
+                             "<h2 style='margin:0 0 4px;'>%1</h2>"
+                             "<p style='margin:0 0 12px;'>Version %2</p>"
+                             "<p style='margin:0;'>📧 <a href='mailto:%3'>%3</a><br/>"
+                             "📱 <a href='tel:%4'>%4</a></p>"
+                             "</div>")
+                               .arg(QString::fromUtf8(SRT_EDITOR_NAME),
+                                    QString::fromUtf8(SRT_EDITOR_VERSION),
+                                    email,
+                                    phone);
+
+    about.setTextFormat(Qt::RichText);
+    about.setTextInteractionFlags(Qt::TextBrowserInteraction);
+    about.setText(body);
+    about.setStandardButtons(QMessageBox::Ok);
+    about.exec();
 }
 
 void MainWindow::open_text_to_speech_window()
