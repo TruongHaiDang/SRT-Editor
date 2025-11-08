@@ -25,6 +25,7 @@
 #include <QStringConverter>
 #endif
 #include "settings.h"
+#include "configure.h"
 #include "ui_main_window.h"
 
 namespace Ui
@@ -61,4 +62,5 @@ private:
     void open_translator_window();
     void open_portfolio_website();
     void open_text_to_speech_window();
+    void show_software_info();
 };

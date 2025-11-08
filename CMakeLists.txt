@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(SRT-Editor LANGUAGES CXX)
+project(SRT-Editor VERSION 1.0.0 LANGUAGES CXX)
+
+set(SRT_EDITOR_DISPLAY_NAME "SRT Editor")
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/configure.h
+               @ONLY)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -68,7 +74,10 @@ add_executable(SRT-Editor
     ui/app_qrc.qrc
 )
 
-target_include_directories(SRT-Editor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/inc)
+target_include_directories(SRT-Editor PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 target_link_libraries(SRT-Editor PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
